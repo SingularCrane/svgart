@@ -7,8 +7,11 @@ import opensimplex
 import time
 import utils
 
+seed = int(time.time())
+random.seed(seed)
+
 w = 1000
-h = 1000
+h = 1620
 r = requests.post("http://colormind.io/api/", json={"model": "default"})
 pallet = [
     "#{0:0>2x}{1:0>2x}{2:0>2x}".format(i[0], i[1], i[2]) for i in r.json()["result"]
@@ -25,16 +28,19 @@ svg.append(draw.Rectangle(0, 0, w, h, fill=pallet[0]))
 
 
 sn = opensimplex.OpenSimplex()
-seed = time.time()
 n = 150
-transx = random.randint(w * 3 / 5, w)
-transy = random.randint(-h * 4 / 5, -h / 5)
+transx = random.randint(0, w)
+transy = random.randint(-h, 0)
 
 for i in range(n):
     rad = 20 + i * 6
     c = pallet[random.randint(1, len(pallet) - 1)]
     d = []
-    for j in range(360):
+    rotate = random.randint(0, 359)
+    angles = list(range(360))
+    angles = angles[rotate:] + angles[:rotate]
+    first = True
+    for j in angles:
         angle = j / 360 * math.tau
         cos = math.cos(angle)
         sin = math.sin(angle)
@@ -42,7 +48,8 @@ for i in range(n):
         r = rad * (1 + noise * ((i / n) ** 3))
         x = cos * r
         y = sin * r * -1
-        d.append(("M" if j == 0 else "L") + " {0} {1}".format(x, y))
+        d.append(("M" if first else "L") + " {0} {1}".format(x, y))
+        first = False
 
     if i == 0:
         p = draw.Path(
@@ -82,6 +89,7 @@ for i in range(n):
         )
         svg.append(p)
 
+svg.append(draw.Text(str(seed), 12, 10, 10, fill="black"))
 svg.saveSvg("out.svg")
 
 os.system("inkscape out.svg -o out.png")
